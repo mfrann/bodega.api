@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "outDir": "dist",
+    "rootDir": "src", // coddigo vive aqui
+    "strict": true, // activa todas las comprobaciones estrictas de tipo
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": true // array[0] puede ser undefined
+  },
+  "include": ["src"]
+}
