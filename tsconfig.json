@@ -8,7 +8,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noUncheckedIndexedAccess": true // array[0] puede ser undefined
+    "noUncheckedIndexedAccess": true, // array[0] puede ser undefined
+    "types": ["node"]
   },
   "include": ["src"]
 }
