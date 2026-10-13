@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,132 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  ADMIN
+  EMPLEADO
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  WALLET
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+// ---------- Modelos ----------
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(EMPLEADO)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  sales          Sale[]          @relation("SaleSeller")
+  cancelledSales Sale[]          @relation("SaleCancelledBy")
+  stockMovements StockMovement[]
+
+  @@map("users")
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id         Int      @id @default(autoincrement())
+  name       String
+  sku        String   @unique
+  categoryId Int      @map("category_id")
+  price      Decimal  @db.Decimal(10, 2)
+  cost       Decimal  @db.Decimal(10, 2)
+  stock      Int      @default(0)
+  minStock   Int      @default(0) @map("min_stock")
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category       Category        @relation(fields: [categoryId], references: [id])
+  saleItems      SaleItem[]
+  stockMovements StockMovement[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+model Sale {
+  id            Int           @id @default(autoincrement())
+  userId        Int           @map("user_id")
+  total         Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @map("payment_method")
+  status        SaleStatus    @default(COMPLETED)
+  cancelledAt   DateTime?     @map("cancelled_at") @db.Timestamptz(3)
+  cancelledById Int?          @map("cancelled_by")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user           User            @relation("SaleSeller", fields: [userId], references: [id])
+  cancelledBy    User?           @relation("SaleCancelledBy", fields: [cancelledById], references: [id])
+  items          SaleItem[]
+  stockMovements StockMovement[]
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("sales")
+}
+
+model SaleItem {
+  id        Int     @id @default(autoincrement())
+  saleId    Int     @map("sale_id")
+  productId Int     @map("product_id")
+  quantity  Int
+  unitPrice Decimal @map("unit_price") @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_items")
+}
+
+model StockMovement {
+  id        Int          @id @default(autoincrement())
+  productId Int          @map("product_id")
+  type      MovementType
+  quantity  Int // FIRMADA: IN positivo, OUT negativo, ADJUSTMENT según el delta
+  reason    String?
+  userId    Int          @map("user_id")
+  saleId    Int?         @map("sale_id")
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  sale    Sale?   @relation(fields: [saleId], references: [id])
+
+  @@index([productId, createdAt])
+  @@index([saleId])
+  @@map("stock_movements")
 }
